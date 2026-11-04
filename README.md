@@ -1,10 +1,6 @@
 <a id="lerobot--mujoco-act-pipeline"></a>
 # LeRobot + MuJoCo + SO-101：ACT 仿真流程
 
-> 中文说明与注释主要由机器翻译并部分校订，阅读时可参考[上游原文](https://github.com/EE5108-DigitalTwins/lerobot_mujoco_sim/tree/912f6f15d9b0052db9719a86c872b659191be716)。部分注释、Notebook 和配置仍为英文；上游演示视频及动画不收录在此仓库。
-
-> **原创作品来源：**
-> 该存储库基于[Jeongeun Park](https://github.com/jeongeun980906)的[lerobot-mujoco-tutorial](https://github.com/jeongeun980906/lerobot-mujoco-tutorial)。该分支重点关注 EE5108 迷你项目的**ACT（动作分块 Transformer）**管道。
 
 在 MuJoCo 中收集演示数据，训练 ACT 策略，并将其部署在模拟中。单任务拾放（SO-101 臂，蓝色块 → 收纳盒）。
 
