@@ -1,10 +1,7 @@
 <a id="lerobot--mujoco-act-pipeline"></a>
-# LeRobot + MuJoCo + SO-101：ACT 仿真流程
+# LeRobot + MuJoCo + SO-101
+单任务拾放（SO-101 臂，蓝色块 → 收纳盒）。
 
-
-在 MuJoCo 中收集演示数据，训练 ACT 策略，并将其部署在模拟中。单任务拾放（SO-101 臂，蓝色块 → 收纳盒）。
-
-Mujoco 的LeRobot SO-101 手臂仿真
 
 <a id="table-of-contents"></a>
 ## 目录
