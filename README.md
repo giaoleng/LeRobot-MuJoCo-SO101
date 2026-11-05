@@ -758,8 +758,6 @@ scripts/eval/
 |---|---:|---:|---:|
 | Success Rate ↑ | **82%** | 69% | 77% |
 | Completion Time ↓ | **1.42 × Expert** | 1.58 × Expert | 1.67 × Expert |
-| P50 Inference Latency ↓ | 待测 | 待测 | 待测 |
-| P95 Inference Latency ↓ | 待测 | 待测 | 待测 |
 | OOD Success Rate ↑ | 62% | 49% | **63%** |
 | Initiation Failure Rate ↓ | **4%** | 13% | 14% |
 | Grasp Failure Rate ↓ | **17%** | 22% | 21% |
@@ -991,37 +989,59 @@ Put the red car into the box.
 
 完整任务成功条件：
 
-\[
-\text{Success}
+$$
+\mathrm{Success}
 =
-\text{Correct Target}
+\mathrm{CorrectTarget}
 \land
-\text{Successful Grasp}
+\mathrm{SuccessfulGrasp}
 \land
-\text{Successful Placement}
-\]
+\mathrm{SuccessfulPlacement}
+$$
+
+其中：
+
+- **CorrectTarget**：机器人选择并抓取正确的目标玩具。
+- **SuccessfulGrasp**：成功抓起目标玩具。
+- **SuccessfulPlacement**：成功将目标玩具放入指定容器。
+
+只有上述三个条件全部满足，才判定当前 Episode 成功。
 
 如果机器人抓取错误玩具，即使成功放入盒子，最终仍判定为失败。
 
+
 ### 13.8 实验结果
+
+> **模拟数据示例（非实测结果）**：以下数值根据公开研究的参考范围构造，仅用于内部对照和文档展示。
 
 #### Simulation Benchmark
 
-| Model | Success Rate | OOD Success | Completion Time | Latency |
-|---|---|---|---|---|
-| ACT | — | — | — | — |
-| Diffusion Policy | — | — | — | — |
-| SmolVLA | — | — | — | — |
+**Environment:** SO-101 MuJoCo  
+**Task:** Multi-Object Scene / Blue Cube Pick-and-Place
+
+| Model | Success Rate ↑ | OOD Success ↑ | Completion Time ↓ | P50 Latency ↓ |
+|---|---:|---:|---:|---:|
+| **ACT** | **82%** | 62% | **1.42 × Expert** | 待测 |
+| Diffusion Policy | 69% | 49% | 1.58 × Expert | 待测 |
+| SmolVLA | 77% | **63%** | 1.67 × Expert | 待测 |
 
 #### Real-world Multi-Object Manipulation
 
-| Model | Success Rate | Target Selection | Wrong-object Rate | Completion Time |
-|---|---|---|---|---|
-| Goal-Conditioned ACT | — | — | — | — |
-| SmolVLA | — | — | — | — |
+**Robot:** SO-101  
+**Task:** Target-Conditioned Toy Pick-and-Place
 
-实验结果按照固定评测协议统计，并报告测试次数和模型配置。
+| Model | Success Rate ↑ | Target Selection ↑ | Wrong-object Rate ↓ | Completion Time ↓ |
+|---|---:|---:|---:|---|
+| ACT | 55% | 81% | 16% | 待测 |
+| **SmolVLA** | **60%** | **86%** | **12%** | 待测 |
 
+真实场景中同时存在多个玩具，每次 Episode 的目标物体由任务条件指定。
+
+ACT 使用目标类别条件，SmolVLA 使用自然语言指令。
+
+任务成功要求正确选择目标、完成抓取并将目标放入指定容器。
+
+以上数值均为模拟示例，不构成实际实验结论。
 ---
 
 <a id="huggingface"></a>
