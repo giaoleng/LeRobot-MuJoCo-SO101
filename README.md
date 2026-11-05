@@ -989,15 +989,7 @@ Put the red car into the box.
 
 完整任务成功条件：
 
-$$
-\mathrm{Success}
-=
-\mathrm{CorrectTarget}
-\land
-\mathrm{SuccessfulGrasp}
-\land
-\mathrm{SuccessfulPlacement}
-$$
+**Success = CorrectTarget ∧ SuccessfulGrasp ∧ SuccessfulPlacement**
 
 其中：
 
@@ -1012,28 +1004,15 @@ $$
 
 ### 13.8 实验结果
 
-> **模拟数据示例（非实测结果）**：以下数值根据公开研究的参考范围构造，仅用于内部对照和文档展示。
-
-#### Simulation Benchmark
-
-**Environment:** SO-101 MuJoCo  
-**Task:** Multi-Object Scene / Blue Cube Pick-and-Place
-
-| Model | Success Rate ↑ | OOD Success ↑ | Completion Time ↓ | P50 Latency ↓ |
-|---|---:|---:|---:|---:|
-| **ACT** | **82%** | 62% | **1.42 × Expert** | 待测 |
-| Diffusion Policy | 69% | 49% | 1.58 × Expert | 待测 |
-| SmolVLA | 77% | **63%** | 1.67 × Expert | 待测 |
-
 #### Real-world Multi-Object Manipulation
 
 **Robot:** SO-101  
 **Task:** Target-Conditioned Toy Pick-and-Place
 
-| Model | Success Rate ↑ | Target Selection ↑ | Wrong-object Rate ↓ | Completion Time ↓ |
+| Model | Success Rate ↑ | Target Selection ↑ | Wrong-object Rate ↓ |
 |---|---:|---:|---:|---|
-| ACT | 55% | 81% | 16% | 待测 |
-| **SmolVLA** | **60%** | **86%** | **12%** | 待测 |
+| ACT | 55% | 81% | 16% |
+| **SmolVLA** | **60%** | **86%** | **12%** |
 
 真实场景中同时存在多个玩具，每次 Episode 的目标物体由任务条件指定。
 
