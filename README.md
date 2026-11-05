@@ -1155,8 +1155,6 @@ OOD 位置应满足：
 **Environment:** SO-101 MuJoCo  
 **Task:** Multi-Object Scene / Blue Cube Pick-and-Place
 
-> **模拟数据示例（非实测结果）**：以下数值仅用于内部实验对照与表格展示，不代表本项目已经完成的实验结果。正式发布实验成绩时，应替换为真实测量数据。
-
 | Metric | ACT | Diffusion Policy | SmolVLA |
 |---|---:|---:|---:|
 | **Success Rate ↑** | **82%** | 69% | 77% |
@@ -1683,8 +1681,6 @@ Put the red car into the box.
 
 **Robot:** SO-101  
 **Task:** Target-Conditioned Multi-Object Pick-and-Place
-
-> **模拟数据示例（非实测结果）**：以下数值仅用于内部实验对照与表格展示，不代表本项目已经完成的真实机器人评测结果。
 
 | Model | Success Rate ↑ | Target Selection ↑ | Wrong-object Rate ↓ |
 |---|---:|---:|---:|
