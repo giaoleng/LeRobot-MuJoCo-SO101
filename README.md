@@ -707,12 +707,9 @@ lerobot-train \
 
 | 模型 | 初始化方式 | 主要输入 |
 |---|---|---|
-| ACT | 随机初始化 | 图像、状态 |
-| Goal-Conditioned ACT | 随机初始化 | 图像、状态、目标类别 |
+| ACT | 随机初始化 | 图像、状态 （目标类别）|
 | Diffusion Policy | 随机初始化 | 图像、状态 |
 | SmolVLA | 预训练权重 | 图像、状态、语言指令 |
-
-ACT、Diffusion Policy 和 SmolVLA 的训练条件存在差异，实验结果应与模型初始化及数据配置一起报告。
 
 ---
 
