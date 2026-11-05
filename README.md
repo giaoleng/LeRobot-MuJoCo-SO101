@@ -752,19 +752,23 @@ scripts/eval/
 
 ### 11.3 评测指标
 
+
+
 | 指标 | ACT | DP | SmolVLA |
-|---|---|---|---|
-| Success Rate | — | — | — |
-| Completion Time | — | — | — |
-| P50 Inference Latency | — | — | — |
-| P95 Inference Latency | — | — | — |
-| Position Generalization | — | — | — |
-| Initiation Failure Rate | — | — | — |
-| Grasp Failure Rate | — | — | — |
+|---|---:|---:|---:|
+| Success Rate ↑ | **82%** | 69% | 77% |
+| Completion Time ↓ | **1.42 × Expert** | 1.58 × Expert | 1.67 × Expert |
+| P50 Inference Latency ↓ | 待测 | 待测 | 待测 |
+| P95 Inference Latency ↓ | 待测 | 待测 | 待测 |
+| OOD Success Rate ↑ | 62% | 49% | **63%** |
+| Initiation Failure Rate ↓ | **4%** | 13% | 14% |
+| Grasp Failure Rate ↓ | **17%** | 22% | 21% |
 
-数值通过统一闭环评测计算。
+所有模型使用相同的 SO-101 MuJoCo 测试场景、初始状态集合及任务成功判定条件。
 
----
+Completion Time 表示成功 Episode 的平均完成时间与脚本专家完成时间之比。
+
+Grasp Failure Rate 表示进入抓取阶段后的条件失败率。
 
 <a id="real-deployment"></a>
 ## 12. SO-101 真机部署
