@@ -105,3 +105,17 @@ notebooks/8.smolvla.ipynb
 /media/*.gif
 /media/*.webm
 *.rrd
+
+# Review/tests and experiment artifacts
+.pytest_cache/
+outputs/
+results/
+.env
+.env.*
+!.env.example
+*.safetensors
+*.pt
+*.pth
+
+# Per-device hardware calibration
+/calibration/
