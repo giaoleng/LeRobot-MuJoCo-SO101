@@ -24,6 +24,17 @@ class TestSummary(unittest.TestCase):
         self.assertEqual(rows[0]['avg_success_time_s'], 10)
         self.assertEqual(rows[1]['startup_fail_pct'], None)
 
+    def test_reject_invalid_records(self):
+        for event in [[], {'policy': [], 'success': True},
+                      {'policy': '', 'success': True},
+                      {'policy': 'act', 'success': 1},
+                      {'policy': 'act', 'success': True, 'inference_ms': [float('nan')]},
+                      {'policy': 'act', 'success': True, 'inference_ms': [-1]},
+                      {'policy': 'act', 'success': True, 'completion_time_s': True},
+                      {'policy': 'act', 'success': True, 'started': 'false'}]:
+            with self.subTest(event=event), self.assertRaises(ValueError):
+                mod.summarize([event])
+
     def test_wilson(self):
         lo, hi = mod.wilson_interval(0, 20)
         self.assertLess(lo, hi)
