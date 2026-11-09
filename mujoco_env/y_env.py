@@ -564,6 +564,10 @@ class SimpleEnv:
                 - joint_angle: [j1,j2,j3,j4,j5,j6]
 
         '''
+        action = np.asarray(action, dtype=np.float32)
+        expected_dim = 7 if self.action_type == 'eef_pose' else self.n_arm_joints + 1
+        if action.shape != (expected_dim,) or not np.all(np.isfinite(action)):
+            raise ValueError(f"Expected finite action of shape ({expected_dim},), got {action.shape}")
         prev_q = copy.deepcopy(self.last_q)
         if self.action_type == 'eef_pose':
             q = self.env.get_qpos_joints(joint_names=self.joint_names)
@@ -611,6 +615,7 @@ class SimpleEnv:
         # 更大的角度使下巴张得更宽。
         gripper_cmd = self._make_gripper_ctrl(action[-1])
         self.compute_q = q
+        self._commanded_gripper_fraction = float(np.clip(action[-1], 0.0, 1.0))
         q = np.concatenate([q, gripper_cmd])
 
         self.q = q
@@ -623,6 +628,16 @@ class SimpleEnv:
             return dq
         else:
             raise ValueError('state_type not recognized')
+
+    def get_action_target(self):
+        """返回最近一次 step 的监督目标：绝对关节弧度 + 夹爪闭合比例。
+
+        不读取尚未执行控制命令的关节反馈；必须在 step(action) 后调用。
+        """
+        return np.concatenate([
+            self.compute_q,
+            [self._commanded_gripper_fraction],
+        ]).astype(np.float32)
 
     def step_env(self):
         # 确保扰动目标保持锁定到动作捕捉，防止意外

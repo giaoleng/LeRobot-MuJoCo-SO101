@@ -372,7 +372,7 @@ def collect_demonstrations(env, dataset, config):
 
     while env.env.is_viewer_alive() and episode_id < config.num_demo:
         env.step_env()
-        if env.env.loop_every(HZ=20):
+        if env.env.loop_every(HZ=config.fps):
             success_now = bool(env.check_success())
             success_streak = (success_streak + 1) if success_now else 0
             done = success_streak >= success_streak_required
@@ -413,7 +413,8 @@ def collect_demonstrations(env, dataset, config):
             ee_pose = env.get_ee_pose()
             agent_image, wrist_image = env.grab_image()
             agent_image, wrist_image = resize_images(agent_image, wrist_image, config.image_size)
-            joint_q = env.step(action)
+            env.step(action)
+            joint_q = env.get_action_target()
 
             if record_flag:
                 dataset.add_frame(

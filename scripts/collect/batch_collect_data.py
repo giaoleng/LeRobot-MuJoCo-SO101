@@ -42,7 +42,7 @@ class CollectConfig:
     delete_existing_dataset: bool = False
     robot_type: str = 'so101'
     fps: int = 20
-    control_hz: int = 40
+    control_hz: int = 20
     image_size: int = 256
     image_writer_threads: int = 10
     image_writer_processes: int = 5
@@ -205,6 +205,8 @@ def resolve_robot_scene_defaults(config):
 
 
 def validate_config(config):
+    if config.fps <= 0 or config.control_hz != config.fps:
+        raise ValueError("逐控制周期保存一帧，要求 fps == control_hz > 0")
     if config.num_demo <= 0:
         raise ValueError("--num-demo must be > 0")
     if config.fps <= 0:
@@ -524,7 +526,7 @@ def collect_demonstrations(env, dataset, config):
                     dataset.clear_episode_buffer()
                     print("[collect_data] Success detected before recording frames; reset without saving.")
                 print(f"[collect_data] RESET TRIGGERED BY SUCCESS (done=True, success_streak={success_streak})")
-                env.reset(seed=config.seed)
+                env.reset(seed=config.seed + num_success + num_failed)
                 record_flag = True
                 frames_in_episode = 0
                 success_streak = 0
@@ -554,7 +556,7 @@ def collect_demonstrations(env, dataset, config):
                 num_failed += 1
                 print("[collect_data] Retract timeout — episode failed, resetting.")
                 _print_episode_stats(num_success, num_failed)
-                env.reset(seed=config.seed)
+                env.reset(seed=config.seed + num_success + num_failed)
                 frames_in_episode = 0
                 success_streak = 0
 
@@ -570,7 +572,7 @@ def collect_demonstrations(env, dataset, config):
             # 以与1.collect_data.py相同的格式记录操作：
             # absolute joint angles for all arm joints plus the normalized
             # 最后一个条目中的夹具命令。
-            joint_q = env.get_joint_state().astype(np.float32)
+            joint_q = env.get_action_target()
 
             ee_pose = env.get_ee_pose()  # kept for dataset recording only
             agent_image, wrist_image = env.grab_image()
