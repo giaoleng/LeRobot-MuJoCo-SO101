@@ -30,6 +30,7 @@ from lerobot.policies.act.modeling_act import ACTPolicy
 from lerobot.configs.types import FeatureType, NormalizationMode, PolicyFeature
 from mujoco_env.y_env import SimpleEnv
 from huggingface_hub import hf_hub_download
+from scripts.eval.act_rollout import JsonlRecorder, run_evaluation
 
 
 @dataclass
@@ -56,6 +57,9 @@ class DeployConfig:
     spawn_fallback_min_dist: float = 0.1
     num_trials: int = 20
     trial_timeout_s: float = 60.0
+    timeout_clock: str = "wall"
+    rollout_jsonl: str | None = None
+    eval_split: str = "id"
 
 
 def parse_args() -> argparse.Namespace:
@@ -131,7 +135,13 @@ def parse_args() -> argparse.Namespace:
         choices=["auto", "cpu", "cuda"],
         help="Device to run policy on.",
     )
-    return p.parse_args()
+    p.add_argument("--timeout-clock", choices=["wall", "sim"], default=merged_defaults["timeout_clock"])
+    p.add_argument("--rollout-jsonl", default=merged_defaults["rollout_jsonl"], help="新建逐Episode JSONL；拒绝覆盖已有文件")
+    p.add_argument("--eval-split", default=merged_defaults["eval_split"])
+    args = p.parse_args()
+    if args.hz <= 0 or args.num_trials < 0 or not np.isfinite(args.trial_timeout_s) or args.trial_timeout_s <= 0:
+        p.error("hz/timeout必须为正，num-trials必须非负")
+    return args
 
 
 def resolve_device(device_flag: str) -> torch.device:
@@ -283,8 +293,11 @@ def main() -> None:
     policy.to(device)
     policy.eval()
 
+    xml_path = Path(args.xml_path).expanduser()
+    if not xml_path.is_absolute():
+        xml_path = PROJECT_ROOT / xml_path
     env = SimpleEnv(
-        args.xml_path,
+        str(xml_path.resolve()),
         action_type="joint_angle",
         pick_body_name=args.pick_body_name,
         place_body_name=args.place_body_name,
@@ -300,70 +313,11 @@ def main() -> None:
 
     import time
 
-    num_trials = args.num_trials          # 0 → 无限期运行
-    timeout_s  = args.trial_timeout_s
-
-    trial_idx      = 0
-    num_success    = 0
-    num_timeout    = 0
-
-    step           = 0
-    trial_start    = time.monotonic()
-
-    env.reset(seed=args.seed + trial_idx)
-    policy.reset()
-
-    print(
-        f"[deploy_act] Starting evaluation: {num_trials} trial(s), "
-        f"{timeout_s:.0f}s timeout each. "
-        f"(num_trials=0 → run indefinitely)"
-    )
-
-    while env.env.is_viewer_alive():
-        if num_trials > 0 and trial_idx >= num_trials:
-            break
-
-        env.step_env()
-        if not env.env.loop_every(HZ=args.hz):
-            continue
-
-        elapsed = time.monotonic() - trial_start
-
-        # ── 成功──────────────────────────────────────────────────────────
-        if bool(env.check_success()):
-            num_success += 1
-            print(
-                f"[deploy_act] Trial {trial_idx + 1}/{num_trials or '∞'} — "
-                f"SUCCESS in {elapsed:.1f}s"
-            )
-            trial_idx  += 1
-            step        = 0
-            policy.reset()
-            env.reset(seed=args.seed + trial_idx)
-            trial_start = time.monotonic()
-            continue
-
-        # ── 超时────────────────────────────────────────────────────────────
-        if elapsed >= timeout_s:
-            num_timeout += 1
-            print(
-                f"[deploy_act] Trial {trial_idx + 1}/{num_trials or '∞'} — "
-                f"TIMEOUT ({timeout_s:.0f}s)"
-            )
-            trial_idx  += 1
-            step        = 0
-            policy.reset()
-            env.reset(seed=args.seed + trial_idx)
-            trial_start = time.monotonic()
-            continue
-
-        # ── 推理步骤──────────────────────────────────────────────────────
+    def select_action(step):
         state = env.get_ee_pose()
         image, wrist_image = env.grab_image()
-
         image_t = img_transform(Image.fromarray(image).resize((args.image_size, args.image_size))).unsqueeze(0).to(device)
         wrist_t = img_transform(Image.fromarray(wrist_image).resize((args.image_size, args.image_size))).unsqueeze(0).to(device)
-
         batch = {
             "observation.state": torch.tensor([state], dtype=torch.float32, device=device),
             "observation.image": image_t,
@@ -371,26 +325,62 @@ def main() -> None:
             "task": [args.task],
             "timestamp": torch.tensor([step / float(args.hz)], dtype=torch.float32, device=device),
         }
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        started = time.perf_counter()
+        with torch.inference_mode():
+            action = policy.select_action(batch)[0].detach().cpu().numpy()
+        latency_ms = (time.perf_counter() - started) * 1000
+        return np.asarray(action, dtype=np.float32), latency_ms
 
-        action = policy.select_action(batch)[0].detach().cpu().numpy()
-        action = np.asarray(action, dtype=np.float32)
-        _ = env.step(action)
-        env.render()
-        step += 1
-
-    # ── 最后总结──────────────────────────────────────────────────────────
-    completed = trial_idx
-    if completed > 0:
-        num_fail = completed - num_success - num_timeout
-        pct = 100.0 * num_success / completed
-        print(
-            f"\n[deploy_act] ══ Evaluation complete ══\n"
-            f"  Trials completed : {completed}\n"
-            f"  Successes        : {num_success}\n"
-            f"  Timeouts         : {num_timeout}\n"
-            f"  Other failures   : {num_fail}\n"
-            f"  Success rate     : {num_success}/{completed} = {pct:.1f}%"
+    recorder = None
+    try:
+        if args.rollout_jsonl:
+            import subprocess
+            try:
+                commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, text=True).strip()
+                dirty = bool(subprocess.check_output(["git", "status", "--porcelain"], cwd=PROJECT_ROOT, text=True).strip())
+            except (OSError, subprocess.CalledProcessError):
+                commit, dirty = None, None
+            log_path = Path(args.rollout_jsonl).expanduser()
+            if not log_path.is_absolute():
+                log_path = PROJECT_ROOT / log_path
+            import hashlib
+            from importlib.metadata import version, PackageNotFoundError
+            versions = {}
+            for package in ("torch", "lerobot", "mujoco"):
+                try:
+                    versions[package] = version(package)
+                except PackageNotFoundError:
+                    versions[package] = None
+            source_hashes = {
+                relative: hashlib.sha256((PROJECT_ROOT / relative).read_bytes()).hexdigest()
+                for relative in ("scripts/deploy/deploy_act.py", "scripts/eval/act_rollout.py", "mujoco_env/y_env.py")
+            }
+            recorder = JsonlRecorder(log_path, {
+                "split": args.eval_split, "checkpoint": str(checkpoint_path),
+                "task": args.task, "control_hz": args.hz,
+                "git_commit": commit, "working_tree_dirty": dirty,
+                "source_sha256": source_hashes, "versions": versions,
+                "xml_path": str(xml_path.resolve()), "image_size": args.image_size,
+                "chunk_size": cfg.chunk_size, "n_action_steps": cfg.n_action_steps,
+                "spawn_ranges": {"x": [args.spawn_x_min, args.spawn_x_max],
+                                 "y": [args.spawn_y_min, args.spawn_y_max],
+                                 "z": [args.spawn_z_min, args.spawn_z_max]},
+            })
+        result = run_evaluation(
+            env, select_action, policy.reset,
+            num_trials=args.num_trials, hz=args.hz, timeout_s=args.trial_timeout_s,
+            seed=args.seed, timeout_clock=args.timeout_clock, record=recorder,
         )
+        completed = result["completed"]
+        print(f"[deploy_act] completed={completed}, successes={result['successes']}, timeouts={result['timeouts']}")
+        if completed:
+            print(f"[deploy_act] Success rate: {100 * result['successes'] / completed:.1f}%")
+    finally:
+        if recorder is not None:
+            recorder.close()
+        env.env.close_viewer()
 
 
 if __name__ == "__main__":

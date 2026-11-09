@@ -41,11 +41,26 @@ def percentile(values: list[float], percent: float) -> float | None:
 def summarize(events: list[dict]) -> list[dict]:
     groups = defaultdict(list)
     for idx, event in enumerate(events, 1):
-        if "policy" not in event or not isinstance(event.get("success"), bool):
+        if not isinstance(event, dict) or not isinstance(event.get("policy"), str) or not event["policy"].strip() or not isinstance(event.get("success"), bool):
             raise ValueError(f"line {idx}: policy (string) and success (boolean) are required")
         if "split" in event and not isinstance(event["split"], str):
             raise ValueError(f"line {idx}: split must be a string")
-        groups[(event["policy"], event.get("split", "all"))].append(event)
+        for key in ("started", "grasped", "placed"):
+            if key in event and not isinstance(event[key], bool):
+                raise ValueError(f"line {idx}: {key} must be a boolean")
+        numbers = []
+        if "completion_time_s" in event:
+            numbers.append(event["completion_time_s"])
+        if "inference_ms" in event:
+            if not isinstance(event["inference_ms"], list):
+                raise ValueError(f"line {idx}: inference_ms must be a list")
+            numbers.extend(event["inference_ms"])
+        if any(isinstance(x, bool) or not isinstance(x, (int, float)) or not math.isfinite(x) or x < 0 for x in numbers):
+            raise ValueError(f"line {idx}: times must be finite nonnegative numbers")
+        if "completed" in event and not isinstance(event["completed"], bool):
+            raise ValueError(f"line {idx}: completed must be a boolean")
+        if event.get("completed", True):
+            groups[(event["policy"], event.get("split", "all"))].append(event)
 
     output = []
     for (policy, split), items in sorted(groups.items()):
@@ -91,6 +106,8 @@ def main() -> None:
     if not events:
         raise SystemExit("No episodes found")
     result = summarize(events)
+    if not result:
+        raise SystemExit("No completed episodes found")
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if args.csv:
         args.csv.parent.mkdir(parents=True, exist_ok=True)
