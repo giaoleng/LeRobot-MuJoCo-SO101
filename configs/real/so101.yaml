@@ -1,0 +1,76 @@
+# SO-101常见双USB相机参考配置；LeRobot 0.5.1。
+# 路径按仓库根目录解析，设备编号和标定内容取决于具体机械臂。
+robot:
+  # 当前用于离线配置/代码检查；重新拿到设备并核对后再设true。
+  hardware_confirmed: false
+  port: /dev/ttyACM0
+  id: so101_follower
+  calibration_dir: ./calibration/so101  # 预期文件：so101_follower.json
+  use_degrees: true
+  disable_torque_on_disconnect: true
+  # 键为硬件相机名；必须与dataset meta/info.json的images键对应。
+  cameras:
+    front:
+      index_or_path: 0
+      width: 640
+      height: 480
+      fps: 30
+    wrist:
+      index_or_path: 1
+      width: 640
+      height: 480
+      fps: 30
+policy:
+  type: act  # act、smolvla或diffusion；必须与checkpoint一致
+  checkpoint: ./checkpoints/real_act/pretrained_model  # 与train_target_act.py输出约定一致
+  dataset_root: ./data/real_so101
+  device: cpu
+  # 真机训练和推理必须共用此语义；不自动转换MuJoCo关节弧度。
+  action_semantics: so101_degrees_gripper_percent
+  processors: saved  # saved:加载checkpoint中的processor；dataset:用本地stats重建
+conditioning:
+  mode: category  # ACT类别条件；SmolVLA改为language
+  feature_key: observation.environment_state
+  target_order: [yellow_duck, red_car, teddy_bear, blue_ball]
+  targets:
+    yellow_duck: Pick up the yellow duck and place it into the box.
+    red_car: Pick up the red toy car and place it into the box.
+    teddy_bear: Pick up the teddy bear and place it into the box.
+    blue_ball: Pick up the blue ball and place it into the box.
+control:
+  fps: 20
+  duration_s: 30
+  max_steps: 600
+  inference_timeout_s: 1.0
+  max_observation_age_s: 1.2
+  stop_file: ./outputs/real/STOP
+  # 五臂关节为仓库SO-101 MJCF范围转换后的参考值，不是租用机器的标定限位。
+  # 真机臂关节单位deg；夹爪单独使用驱动标定百分比0..100。
+  joint_limits_source: asset/so_arm100/SO101/so101_body.xml
+  joint_limits:
+    shoulder_pan.pos: [-110, 110]
+    shoulder_lift.pos: [-100, 100]
+    elbow_flex.pos: [-96.83, 96.83]
+    wrist_flex.pos: [-95, 95]
+    wrist_roll.pos: [-157.21, 162.79]
+    gripper.pos: [0, 100]
+  max_step:
+    shoulder_pan.pos: 2
+    shoulder_lift.pos: 2
+    elbow_flex.pos: 2
+    wrist_flex.pos: 2
+    wrist_roll.pos: 2
+    gripper.pos: 3
+  max_speed:
+    shoulder_pan.pos: 20
+    shoulder_lift.pos: 20
+    elbow_flex.pos: 20
+    wrist_flex.pos: 20
+    wrist_roll.pos: 20
+    gripper.pos: 30
+logging:
+  output: ./outputs/real/deploy.jsonl
+evaluation:
+  episodes: 5
+  split: id
+  output: ./outputs/real/evaluation.jsonl
