@@ -18,15 +18,15 @@
 | Diffusion Policy | LeRobot `diffusion` | 从头训练 | `scripts/train/train_diffusion.sh` | 入口已编写，待远程训练 |
 | SmolVLA | LeRobot `smolvla_base` | 预训练权重微调 | `scripts/train/finetune_smolvla.sh` | 入口已编写，待远程训练 |
 
-三种策略使用同一份 LeRobotDataset、同一组测试 Seeds 和同一套成功判定规则。训练和模型权重保留在私有远程存储，不默认上传 Hub；详情见 [三策略实验方案](docs/POLICY_COMPARISON.md)。
+三种策略使用同一份 LeRobotDataset、同一组测试 Seeds 和同一套成功判定规则。训练和模型权重保留在私有远程存储，不默认上传 Hub；详情见 [三策略实验方案](POLICY_COMPARISON.md)。
 
 ## 仿真演示
 
-[查看已录制的脚本专家 MuJoCo 演示](media/simulation_demo.mp4)（**不是 ACT/DP/SmolVLA 策略演示**）。
+[查看已录制的脚本专家 MuJoCo 演示](../media/simulation_demo.mp4)（**不是 ACT/DP/SmolVLA 策略演示**）。
 
 ## 真机部署规划
 
-仅计划将 SmolVLA 部署至 SO-100 真机；需要先完成关节校准、动作范围、夹爪、摄像头输入、急停和限速验证，详情见 [真机部署注意事项](docs/REAL_DEPLOYMENT.md)。
+仅计划将 SmolVLA 部署至 SO-100 真机；需要先完成关节校准、动作范围、夹爪、摄像头输入、急停和限速验证，详情见 [真机部署注意事项](REAL_DEPLOYMENT.md)。
 
 ## 目录补充
 
