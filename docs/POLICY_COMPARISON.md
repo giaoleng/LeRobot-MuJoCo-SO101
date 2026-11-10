@@ -1,11 +1,11 @@
 # SO-101 MuJoCo：ACT / Diffusion Policy / SmolVLA 统一仿真评测
 
-## 当前状态
+## 当前状态（2026-11-09）
 
-- 已有 MuJoCo 任务：SO-101 抓取蓝色方块并放入容器。
-- 已有脚本专家及 `media/simulation_demo.mp4`；它不是训练策略的演示。
-- 本增量包提供 DP 和 SmolVLA 的 **LeRobot 训练启动入口**，以及 rollout 日志统计工具。
-- 尚未接入现有 `mujoco_env/y_env.py` 的策略推理适配器；统一 `eval_mujoco.py` 需要依据现有 env 的 `reset/step`、camera、action 和 success 接口进行开发。
+- 项目维护者确认：SO-101 MuJoCo 的 ACT、Diffusion Policy 和 SmolVLA 训练与仿真评测已完成；下表与 README 10.6 节保持一致。
+- MuJoCo 任务是多颜色方块干扰下抓取蓝色方块并放入容器。
+- 仓库保留脚本专家与 `media/simulation_demo.mp4`；该演示属于专家控制器，不能当作三种学习策略的评测视频。
+- 早期工程文档中的“待测”与“尚未接入统一 eval_mujoco.py”属于当时的代码完善阶段；**当前仓库没有公布完整的原始训练与评测产物**，因此本次文档同步未独立重跑或核验实验指标。
 
 ## 数据要求
 
@@ -61,13 +61,19 @@ python scripts/eval/summarize_rollouts.py outputs/eval/rollouts.jsonl \
 
 注意：汇总工具 **不是** Mujoco Rollout，不能替代 `eval_mujoco.py`。此外，统计时 `inference_ms` 是每次推理调用耗时，不是完整动作执行延迟；不同 chunk_size 需要同时报告。
 
-## 正式对比表（待测）
+## 实验结果汇总
 
-| 模型 | 成功次数/测试数 | ID成功率 | OOD成功率 | 成功平均时长 | 推理P50/P95 | 启动失败率 |
-|---|---|---|---|---|---|---|
-| ACT | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| Diffusion Policy | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
-| SmolVLA | 待测 | 待测 | 待测 | 待测 | 待测 | 待测 |
+以下指标与 [README 第 10.6 节](../README.md#106-仿真实验结果) 相同。项目维护者确认实验已完成；训练日志、Checkpoint、逐 Episode 评测记录和数据集保存在私有存储，未上传 GitHub。
+
+| 指标 | ACT | Diffusion Policy | SmolVLA |
+|---|---:|---:|---:|
+| 任务成功率 | **82%** | 69% | 77% |
+| OOD 成功率 | 62% | 49% | **63%** |
+| 完成时间（相对脚本专家） | **1.42×** | 1.58× | 1.67× |
+| 启动失败率 | **4%** | 13% | 14% |
+| 抓取失败率 | **17%** | 22% | 21% |
+
+完整的测试 Episode 数量、成功次数和推理延迟 P50/P95 未在现有 README 中披露，因此不填写推测数值；这不代表这些实验尚未完成。本文档仅统一项目状态与已有结果，没有重新执行训练或评测。
 
 ## 参考
 
