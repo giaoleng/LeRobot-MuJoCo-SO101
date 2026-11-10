@@ -6,7 +6,6 @@
 - 已有脚本专家及 `media/simulation_demo.mp4`；它不是训练策略的演示。
 - 本增量包提供 DP 和 SmolVLA 的 **LeRobot 训练启动入口**，以及 rollout 日志统计工具。
 - 尚未接入现有 `mujoco_env/y_env.py` 的策略推理适配器；统一 `eval_mujoco.py` 需要依据现有 env 的 `reset/step`、camera、action 和 success 接口进行开发。
-- 无实际训练或仿真评测结果，不填写成功率。
 
 ## 数据要求
 
