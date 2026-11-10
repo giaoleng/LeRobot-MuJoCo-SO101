@@ -1148,6 +1148,40 @@ OOD 位置应满足：
 
 如果抓取其他颜色方块、目标中途掉落或未能完成放置，则判定为失败。
 
+### 10.5.1 ACT / Diffusion Policy / SmolVLA 统一仿真评测入口
+
+仓库提供 `scripts/eval/eval_mujoco.py`，通过相同的 SO-101 MuJoCo 环境、任务定义和 Episode 调度选择三种策略，并记录带策略名称、Checkpoint、seed、ID/OOD 分组和推理延迟的 JSONL。该入口仅使用**本地** LeRobot Checkpoint 与数据元信息，不连接真机，也不自动下载权重。
+
+```bash
+# 在项目根目录；先查看参数与目录规划，无需模型/数据/显卡
+python scripts/eval/eval_mujoco.py --policy act \
+  --checkpoint /private/weights/act/pretrained_model \
+  --dataset-root /private/datasets/so101_sim \
+  --dry-run
+
+# 使用实际本地路径运行，三种策略分别运行（不能共用不匹配的权重）
+python scripts/eval/eval_mujoco.py --policy act \
+  --checkpoint /private/weights/act/pretrained_model \
+  --dataset-root /private/datasets/so101_sim \
+  --action-semantics joint_radians_gripper_closed_0_1 \
+  --top-feature observation.images.top \
+  --wrist-feature observation.images.wrist \
+  --processors saved --device cuda --split id \
+  --num-trials 20 --seed 42 --timeout-clock sim \
+  --output outputs/eval/act_id_seed42.jsonl
+
+# 将 --policy act 与 --checkpoint 改为 diffusion 或 smolvla 的实际配置，
+# 其他测试参数保持一致，分别保存不同路径的 JSONL。
+python scripts/eval/summarize_rollouts.py outputs/eval/act_id_seed42.jsonl \
+  --csv outputs/eval/act_id_seed42.csv
+```
+
+**使用前必须核对：** `--top-feature`/`--wrist-feature` 是实际训练数据中的图像键；旧数据可能使用 `observation.image` 和 `observation.wrist_image`（可省略两个相机参数），新数据可使用 `observation.images.*`。策略输入目前支持**6 维末端 xyz+rpy + 两路 RGB**；如果模型还要求类别条件、额外相机或其他状态，需要先补专用适配器，不能忽略该输入。环境输出必须是 **5 个绝对关节弧度 + 1 个夹爪闭合比例 [0,1]**，不接受真机 degrees/百分比动作。预处理器需与训练时一致，`--processors saved` 需要 Checkpoint 内的处理器 JSON；未保存时可使用 `--processors dataset` 从本地 `meta/stats.json` 构建。
+
+该入口沿用 **LeRobot 0.5.1** 的策略工厂及处理器 API。默认使用现有可视化环境，需 MuJoCo viewer 可用。源码静态检查与轻量单元测试不等价于真实权重集成测试；三种模型需要在实际 GPU/仿真环境分别做一次加载和 Episode 冒烟验收，确认 checkpoint 特征与处理器匹配。
+
+**结果来源：** 第 10.6 节的百分比沿用此前完成的私有实验汇总，**不是**这次新增评测脚本重新跑出来的结果。已有实验不需要重训，原始数据/权重也无需上传 GitHub。
+
 ### 10.6 仿真实验结果
 
 #### Simulation Policy Benchmark
