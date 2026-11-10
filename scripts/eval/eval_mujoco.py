@@ -76,6 +76,13 @@ def parse_args(argv=None):
         p.error("top-feature 与 wrist-feature 必须不同")
     if not a.dry_run and a.action_semantics != ACTION_SEMANTICS:
         p.error("实际评测必须显式传入 --action-semantics " + ACTION_SEMANTICS)
+    if not a.dry_run and a.split == "ood":
+        # 标签不能替代分布外布局。至少显式改变一个位置边界。
+        default_bounds = (0.21, 0.22, 0.04, 0.16, 0.815, 0.815)
+        requested_bounds = (a.spawn_x_min, a.spawn_x_max, a.spawn_y_min,
+                            a.spawn_y_max, a.spawn_z_min, a.spawn_z_max)
+        if requested_bounds == default_bounds:
+            p.error("OOD评测必须指定经过验证的分布外 --spawn-*-min/max 位置范围，不能只改 --split 标签")
     for key in ("checkpoint", "dataset_root", "xml_path", "output"):
         value = getattr(a, key)
         if value is not None:
@@ -138,6 +145,9 @@ class PolicyAdapter:
         import numpy as np
         import torch
         from PIL import Image
+        from importlib.metadata import version
+        if version("lerobot") != "0.5.1":
+            raise RuntimeError("统一评测适配器针对LeRobot==0.5.1；请先核对实验环境版本")
         from lerobot.configs.policies import PreTrainedConfig
         from lerobot.policies.factory import get_policy_class, make_pre_post_processors
         from lerobot.policies.utils import build_inference_frame
