@@ -40,6 +40,25 @@ bash scripts/train/finetune_smolvla.sh
 
 训练入口默认包含 `--policy.push_to_hub=false`，并设置 `WANDB_MODE=disabled`；脚本不会自动推送数据与模型。但其他项目脚本、依赖与启动环境仍需单独检查，不能据此保证整个系统完全无外网通信。不要公开数据、checkpoint、rollout 日志和真实机器人地址。
 
+## 统一策略推理与仿真评测
+
+现已增加 `scripts/eval/eval_mujoco.py`，支持 `--policy act|diffusion|smolvla` 三种策略使用同一 `SimpleEnv` 和 `run_evaluation` Episode 调度，输出含实际策略名的逐 Episode JSONL；`scripts/eval/summarize_rollouts.py` 继续负责指标汇总。
+
+```bash
+python scripts/eval/eval_mujoco.py --policy act \
+  --checkpoint /private/weights/act/pretrained_model \
+  --dataset-root /private/datasets/so101_sim \
+  --dry-run
+
+# 实际评测须同时指定动作语义、相机特征与独立输出路径。
+# 参考根 README 10.5.1 节中的完整命令，不应照搬占位路径。
+python -m unittest tests.test_unified_eval -v
+```
+
+该统一入口使用 LeRobot 0.5.1 策略工厂和本地处理器；强制检验 checkpoint policy type、图像与状态输入、六维动作输出及动作单位。如果权重需要额外条件输入，须扩展适配器而不是静默填充假数据。当前自动测试为无 GPU 契约测试；真实模型推理/仿真仍须用私有 checkpoint 在远程环境验收。
+
+历史 README 指标是维护者确认的已完成实验结果，**不是本次新增脚本的自动回放结果**，本次没有重新运行或修改已有百分比。
+
 ## 评测协议
 
 统一设置：相同测试 Seeds、初始物体位置集合、Episode 最大仿真时长、控制频率、success checker、观测映射、GPU 型号。至少 50 次 Episode，最好 100 次；区分训练分布内 ID 和未见位置 OOD。记录原始成功数而非仅汇报百分比。
