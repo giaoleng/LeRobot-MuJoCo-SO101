@@ -417,15 +417,6 @@ LeRobot-MuJoCo-SO101/
 │   ├── collect_manual.yaml
 │   ├── collect_batch.yaml
 │   ├── deploy_act.yaml
-│   │
-│   ├── train/
-│   │   ├── act.yaml
-│   │   ├── diffusion.yaml
-│   │   └── smolvla.yaml
-│   │
-│   ├── eval/
-│   │   └── benchmark.yaml
-│   │
 │   └── real/
 │       ├── so101.yaml
 │       └── requirements.txt  # 真机环境专用依赖
@@ -466,20 +457,19 @@ LeRobot-MuJoCo-SO101/
 ├── notebooks/
 │
 ├── docs/
+│   ├── PROJECT_STATE.md
 │   ├── POLICY_COMPARISON.md
-│   ├── SIMULATION_EVALUATION.md
+│   ├── ENGINEERING_NEXT_STEPS.md
 │   └── REAL_DEPLOYMENT.md
 │
 ├── media/
 │   └── simulation_demo.mp4
 │
-├── third_party/
-│   └── SO-ARM100/
-│
-├── data/
-├── checkpoints/
-└── outputs/
+└── third_party/
+    └── SO-ARM100/
 ```
+
+**说明：** `data/`、`checkpoints/`、`outputs/` 是私有数据、权重和实验输出的建议存放目录，不是 GitHub 当前跟踪的目录；项目结构图只列出已提交的文件与主要目录。
 
 ### 5.1 主要目录说明
 
