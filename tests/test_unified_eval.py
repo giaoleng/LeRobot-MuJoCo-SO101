@@ -128,7 +128,7 @@ class UnifiedEvaluation(unittest.TestCase):
             "--policy", "smolvla", "--checkpoint", "/tmp/c",
             "--dataset-root", "/tmp/d",
             "--action-semantics", runner.ACTION_SEMANTICS, "--split", "ood",
-            "--spawn-x-min", "0.24",
+            "--spawn-x-min", "0.24", "--spawn-x-max", "0.25",
         ])
         self.assertEqual(options.split, "ood")
 
