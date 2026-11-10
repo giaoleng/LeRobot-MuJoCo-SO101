@@ -398,10 +398,6 @@ LeRobot-MuJoCo-SO101/
 ├── Dockerfile.runtime          # CPU 运行镜像
 ├── docker-compose.yml          # Compose 服务配置
 │
-├── configs/
-│   └── real/
-│       └── requirements.txt    # 真机环境专用依赖，非根目录通用依赖
-│
 ├── asset/
 │   ├── scene_so101_y.xml
 │   ├── so_arm100/
@@ -431,7 +427,8 @@ LeRobot-MuJoCo-SO101/
 │   │   └── benchmark.yaml
 │   │
 │   └── real/
-│       └── so101.yaml
+│       ├── so101.yaml
+│       └── requirements.txt  # 真机环境专用依赖
 │
 ├── scripts/
 │   ├── collect/
