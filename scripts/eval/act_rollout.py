@@ -1,4 +1,4 @@
-"""ACT评测调度与JSONL记录；模型/物理接口由调用者传入，便于独立验证。"""
+"""MuJoCo策略评测调度与JSONL记录；支持ACT/DP/SmolVLA，保留旧ACT调用兼容。"""
 from __future__ import annotations
 
 import json
@@ -26,12 +26,14 @@ class JsonlRecorder:
 
 
 def run_evaluation(env, select_action, reset_policy, *, num_trials, hz, timeout_s,
-                   seed=0, timeout_clock='wall', record=None, clock=time.monotonic):
+                   seed=0, timeout_clock='wall', record=None, clock=time.monotonic, policy_name='act'):
     """select_action返回(action, inference_ms)，不承担模型归一化或动作转换。"""
     if num_trials < 0 or hz <= 0 or not math.isfinite(timeout_s) or timeout_s <= 0:
         raise ValueError('num_trials必须非负，hz和timeout_s必须为正')
     if timeout_clock not in ('wall', 'sim'):
         raise ValueError('timeout_clock must be wall or sim')
+    if policy_name not in ('act', 'diffusion', 'smolvla'):
+        raise ValueError('policy_name必须是act/diffusion/smolvla')
     completed = successes = timeouts = 0
     record = record or (lambda event: None)
     while num_trials == 0 or completed < num_trials:
@@ -46,7 +48,7 @@ def run_evaluation(env, select_action, reset_policy, *, num_trials, hz, timeout_
 
         def event(success, reason, done):
             return {
-                'policy': 'act', 'episode': completed, 'seed': episode_seed,
+                'policy': policy_name, 'episode': completed, 'seed': episode_seed,
                 'success': success, 'completed': done, 'reason': reason,
                 'action_emitted': steps > 0, 'control_steps': steps,
                 'completion_time_s': sim_elapsed if timeout_clock == 'sim' else wall_elapsed,
