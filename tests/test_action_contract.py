@@ -70,4 +70,26 @@ class SamplingClock(unittest.TestCase):
         with self.assertRaises(ValueError): space['validate_config'](config)
 
 
+class DeviceSelection(unittest.TestCase):
+    """直接隔离执行部署脚本的resolve_device，不导入LeRobot/torch。"""
+
+    def test_requested_cuda_must_exist(self):
+        source = ast.parse((ROOT / 'scripts/deploy/deploy_act.py').read_text(encoding='utf-8'))
+        fn = next(node for node in source.body
+                  if isinstance(node, ast.FunctionDef) and node.name == 'resolve_device')
+        namespace = {
+            'torch': NS(device=lambda name: name, cuda=NS(is_available=lambda: False)),
+        }
+        exec(compile(ast.fix_missing_locations(ast.Module(body=[fn], type_ignores=[])),
+                     'deploy_act.py', 'exec'), namespace)
+        select = namespace['resolve_device']
+        self.assertEqual(select('cpu'), 'cpu')
+        self.assertEqual(select('auto'), 'cpu')
+        with self.assertRaisesRegex(RuntimeError, '--device cuda'):
+            select('cuda')
+        namespace['torch'].cuda.is_available = lambda: True
+        self.assertEqual(select('cuda'), 'cuda')
+        self.assertEqual(select('auto'), 'cuda')
+
+
 if __name__ == '__main__': unittest.main()
