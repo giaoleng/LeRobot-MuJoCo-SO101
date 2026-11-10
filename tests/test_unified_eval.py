@@ -117,6 +117,21 @@ class UnifiedEvaluation(unittest.TestCase):
             runner.parse_args(["--policy", "act", "--checkpoint", "/tmp/ckpt",
                                "--dataset-root", "/tmp/data"])
 
+    def test_ood_cannot_be_only_a_new_label(self):
+        with self.assertRaises(SystemExit):
+            runner.parse_args([
+                "--policy", "smolvla", "--checkpoint", "/tmp/c",
+                "--dataset-root", "/tmp/d",
+                "--action-semantics", runner.ACTION_SEMANTICS, "--split", "ood",
+            ])
+        options = runner.parse_args([
+            "--policy", "smolvla", "--checkpoint", "/tmp/c",
+            "--dataset-root", "/tmp/d",
+            "--action-semantics", runner.ACTION_SEMANTICS, "--split", "ood",
+            "--spawn-x-min", "0.24",
+        ])
+        self.assertEqual(options.split, "ood")
+
     def test_cannot_mix_camera_features(self):
         with self.assertRaises(SystemExit):
             runner.parse_args(["--policy", "act", "--checkpoint", "/tmp/ckpt",
