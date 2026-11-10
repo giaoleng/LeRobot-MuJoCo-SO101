@@ -52,7 +52,7 @@ python scripts/eval/eval_mujoco.py --policy act \
 
 # 实际评测须同时指定动作语义、相机特征与独立输出路径。
 # 参考根 README 10.5.1 节中的完整命令，不应照搬占位路径。
-python -m unittest tests.test_unified_eval -v
+python -m unittest discover -s tests -p test_unified_eval.py -v
 ```
 
 该统一入口使用 LeRobot 0.5.1 策略工厂和本地处理器；强制检验 checkpoint policy type、图像与状态输入、六维动作输出及动作单位。如果权重需要额外条件输入，须扩展适配器而不是静默填充假数据。当前自动测试为无 GPU 契约测试；真实模型推理/仿真仍须用私有 checkpoint 在远程环境验收。
