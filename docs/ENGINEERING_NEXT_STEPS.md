@@ -4,6 +4,8 @@
 
 以下保留当轮技术验收内容，命令不代表最新实际运行配置。
 
+> **2026-11-09 后续代码更新：** 新增 `scripts/eval/eval_mujoco.py` 统一支持 ACT/DP/SmolVLA 评测，`scripts/eval/act_rollout.py` 增加 `policy_name` 参数，新增 `tests/test_unified_eval.py` 无模型测试。请以 README 10.5.1 节的现行命令为准。本节下面“多策略统一接口：具体后续实现方案”是 11 月 8 日的历史规划，而非当前功能缺失声明。
+
 ## 已处理
 
 - 采集动作改为裁剪后的绝对目标关节角与期望夹爪比例；不再把物理未推进时的反馈当作目标。
