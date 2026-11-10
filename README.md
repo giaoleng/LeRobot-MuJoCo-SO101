@@ -288,68 +288,76 @@ SmolVLA 在视觉和机器人状态基础上引入语言条件，利用预训练
 
 不同模型 Checkpoint 可能依赖不同版本的 LeRobot、PyTorch 和 Transformers，应以对应的运行环境配置为准。
 
-### 4.2 Docker
+### 4.2 Docker：区分 CPU 运行与 GPU 训练
 
-构建运行镜像：
+仓库有两套不同用途的镜像，请按任务选择，**不要把 CPU 运行镜像当成 GPU 推理镜像**。
+
+| Dockerfile | 用途 | Python / PyTorch | GPU |
+|---|---|---|---|
+| `Dockerfile.runtime` | 数据处理、CPU 推理与基础仿真 | Python 3.12 / PyTorch CPU | 不需要，也不提供 CUDA PyTorch |
+| `Dockerfile` | 远程 GPU 训练与 GPU 推理环境 | Python 3.12 / CUDA 12.4 对应 PyTorch | 需要 NVIDIA GPU 与容器运行时 |
+
+从仓库根目录构建：
 
 ```bash
+# CPU 运行镜像
 docker build -t lerobot_mujoco_sim:runtime -f Dockerfile.runtime .
-```
 
-构建训练镜像：
-
-```bash
+# GPU 训练/推理镜像
 docker build -t lerobot_mujoco_sim:train -f Dockerfile .
 ```
 
-启动运行容器：
+运行 **CPU 镜像**（不加 `--gpus all`）：
+
+```bash
+docker run --rm -it \
+  -v "$PWD:/workspace" \
+  lerobot_mujoco_sim:runtime
+```
+
+在已配置 NVIDIA Container Toolkit 的远程 GPU 主机上运行 **GPU 镜像**：
 
 ```bash
 docker run --rm -it \
   --gpus all \
   -v "$PWD:/workspace" \
-  lerobot_mujoco_sim:runtime
+  lerobot_mujoco_sim:train
 ```
 
-进入项目目录：
-
-```bash
-cd /workspace
-```
-
-上述 GPU 配置适用于具备 NVIDIA Container Toolkit 的运行环境。
+进入容器后项目位于 `/workspace`。以上命令仅为镜像与运行方式说明；MuJoCo 的 viewer、EGL 或 OSMesa 能否使用，还取决于主机图形环境和容器挂载配置。**这些示例不代表本次重新构建或执行了实验。**
 
 ### 4.3 Docker Compose
 
-启动容器：
+`docker-compose.yml` 中 `lerobot-runtime` 对应 **CPU 运行镜像**，`lerobot` 对应 **GPU 训练镜像的构建配置**；Compose 文件本身没有启用 GPU 设备预留。启动 CPU 服务：
 
 ```bash
 docker compose up -d lerobot-runtime
-```
-
-进入容器：
-
-```bash
 docker compose exec lerobot-runtime bash
-```
-
-进入项目：
-
-```bash
 cd /workspace
 ```
 
-### 4.4 Python 环境
+如需 **GPU 训练或评测**，建议使用上一节的 `docker run --gpus all ... lerobot_mujoco_sim:train`，并在有 GPU 的远程平台运行；不能仅凭 Compose 中设置 NVIDIA 环境变量就认为容器获得了 GPU。
 
-如果采用 Python 虚拟环境：
+### 4.4 Python 环境（不使用 Docker）
+
+根目录**没有** `requirements.txt`；依赖由两个 Dockerfile 分别安装，`configs/real/requirements.txt` 专用于 SO-101 真机环境，**不是**仿真通用依赖文件。
+
+本地只需验证基础 MuJoCo、数据处理或 CPU 推理时，可以参考 `Dockerfile.runtime` 创建 Python 3.12 虚拟环境：
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
-
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+
+# CPU 版 PyTorch，与 Dockerfile.runtime 的基础版本对应
+python -m pip install torch==2.7.0 torchvision==0.22.0 \
+  --index-url https://download.pytorch.org/whl/cpu
+
+python -m pip install "lerobot==0.5.1" "mujoco==3.1.6" \
+  numpy Pillow glfw termcolor PyYAML mink matplotlib scipy opencv-python
 ```
+
+上述为无 Docker 的**参考安装命令**，不保证自动覆盖每个模型 Checkpoint 的额外依赖。SmolVLA/真机推理需核对对应模型与相机/驱动依赖；正式 GPU 训练优先使用项目的 GPU Docker 环境或已验证的远程环境。
 
 验证 MuJoCo：
 
@@ -386,10 +394,13 @@ LeRobot-MuJoCo-SO101/
 │
 ├── README.md
 ├── LICENSE
-├── requirements.txt
-├── Dockerfile
-├── Dockerfile.runtime
-├── docker-compose.yml
+├── Dockerfile                  # GPU 训练/推理镜像
+├── Dockerfile.runtime          # CPU 运行镜像
+├── docker-compose.yml          # Compose 服务配置
+│
+├── configs/
+│   └── real/
+│       └── requirements.txt    # 真机环境专用依赖，非根目录通用依赖
 │
 ├── asset/
 │   ├── scene_so101_y.xml
