@@ -1,4 +1,6 @@
 services:
+  # Development / GPU-capable image: this service does not request GPU devices.
+  # For actual GPU access use docker run --gpus all with the trained image.
   lerobot:
     build:
       context: .
@@ -31,6 +33,7 @@ services:
     #          count: all
     #          capabilities: [gpu]
 
+  # CPU-only: Dockerfile.runtime installs CPU PyTorch; do not assume CUDA access.
   lerobot-runtime:
     build:
       context: .
@@ -44,8 +47,7 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
       - MUJOCO_GL=${MUJOCO_GL:-glfw}
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
-      - NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:-all}
+      # No NVIDIA_VISIBLE_DEVICES / NVIDIA_DRIVER_CAPABILITIES in CPU-only runtime.
       # Leave HF_HUB_OFFLINE unset here so uploads/downloads can work by default.
     devices:
       - /dev/dri:/dev/dri
