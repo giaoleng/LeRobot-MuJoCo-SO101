@@ -1172,6 +1172,8 @@ python scripts/eval/eval_mujoco.py --policy act \
 
 # 将 --policy act 与 --checkpoint 改为 diffusion 或 smolvla 的实际配置，
 # 其他测试参数保持一致，分别保存不同路径的 JSONL。
+# OOD：必须同时传入实际的 --spawn-x/y/z-min/max 分布外边界。
+# 仅修改 --split ood 不构成 OOD 评测，脚本会拒绝沿用默认 ID 位置范围。
 python scripts/eval/summarize_rollouts.py outputs/eval/act_id_seed42.jsonl \
   --csv outputs/eval/act_id_seed42.csv
 ```
