@@ -148,7 +148,9 @@ def resolve_device(device_flag: str) -> torch.device:
     if device_flag == "cpu":
         return torch.device("cpu")
     if device_flag == "cuda":
-        return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if not torch.cuda.is_available():
+            raise RuntimeError("指定了 --device cuda，但当前环境没有可用的 CUDA GPU")
+        return torch.device("cuda")
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
